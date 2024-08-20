@@ -277,7 +277,7 @@ export default function Home() {
             left: '0',
             width: '100vw',
             height: '100vh',
-            backgroundImage: 'url("/귀신.JPG")',
+            backgroundImage: 'url("./귀신.jpg")',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             zIndex: 1000,
