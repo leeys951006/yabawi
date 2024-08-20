@@ -9,6 +9,7 @@ export default function Home() {
   const [message, setMessage] = useState<string>('');
   const [isShuffling, setIsShuffling] = useState<boolean>(false);
   const [showBall, setShowBall] = useState<boolean>(false);
+  const [showGhost, setShowGhost] = useState<boolean>(false); // 귀신 이미지 표시 여부
   const [positions, setPositions] = useState<{ left: string; top: string }[]>([]);
   const [backgroundImages, setBackgroundImages] = useState<string[]>([]);
   const [difficulty, setDifficulty] = useState<number>(10);
@@ -16,8 +17,8 @@ export default function Home() {
 
   useEffect(() => {
     const initialPositions = Array.from({ length: numCups }, (_, i) => ({
-      left: `${130 + (i % 5) * 70}px`,
-      top: `${Math.floor(i / 5) * 150}px`,
+      left: `${120 + (i % 5) * 80}px`,
+      top: `${Math.floor(i / 5) * 120}px`,
     }));
     setPositions(initialPositions);
     setBackgroundImages(Array(numCups).fill('url("/피카츄.png")'));
@@ -27,17 +28,18 @@ export default function Home() {
     setMessage('');
     setIsShuffling(true);
     setShowBall(false);
+    setShowGhost(false); // 게임 시작 시 귀신 이미지 숨김
     setBackgroundImages(Array(numCups).fill('url("/피카츄.png")')); // 피카츄 이미지로 초기화
 
-    let newBallPosition = Math.floor(Math.random() * numCups);
-    setBallPosition(newBallPosition);
+    let initialBallPosition = Math.floor(Math.random() * numCups); // 초기 공의 위치 설정
+    setBallPosition(initialBallPosition);
 
     setShowBall(true);
 
     setTimeout(() => {
       setShowBall(false);
       let shuffledCups = [...cups];
-      let currentBallPosition = newBallPosition; // 초기 위치 저장
+      let currentBallPosition = initialBallPosition; // 초기 공 위치 저장
       const newPositions = [...positions];
       let count = 0;
 
@@ -46,7 +48,7 @@ export default function Home() {
           clearInterval(interval);
           setIsShuffling(false);
           setMessage('Choose a cup!');
-          setBallPosition(currentBallPosition); // 섞인 후의 위치로 업데이트
+          setBallPosition(currentBallPosition); // 섞인 후의 공 위치로 업데이트
           return;
         }
 
@@ -57,7 +59,7 @@ export default function Home() {
         [shuffledCups[randomIndex1], shuffledCups[randomIndex2]] = [shuffledCups[randomIndex2], shuffledCups[randomIndex1]];
         [newPositions[randomIndex1], newPositions[randomIndex2]] = [newPositions[randomIndex2], newPositions[randomIndex1]];
 
-        // 공 위치도 함께 섞기
+        // 공 위치도 함께 섞기 (공이 있는 컵을 추적)
         if (currentBallPosition === randomIndex1) {
           currentBallPosition = randomIndex2;
         } else if (currentBallPosition === randomIndex2) {
@@ -68,15 +70,21 @@ export default function Home() {
         setPositions([...newPositions]);
         setCups([...shuffledCups]);
 
-        count++;
-      }, 200); // 0.2초마다 컵의 위치를 바꿈
+        // 섞는 횟수 랜덤화
+        if (Math.random() > 0.5) {
+          count += 2;
+        } else {
+          count += 1;
+        }
+      }, 150); // 더 빠르게 섞음
     }, 1000); // 1초 동안 공 위치를 보여줌
   };
 
   const chooseCup = (index: number) => {
-    if (isShuffling) return;
+    if (isShuffling || showGhost) return; // 섞는 중이거나 귀신이 보이는 동안 선택 불가
 
-    if (cups[index] === ballPosition) {
+    if (index === ballPosition) {
+      // 선택한 인덱스와 공 위치를 정확히 비교
       setMessage('You won!');
       setShowBall(false);
       setTimeout(() => {
@@ -86,12 +94,17 @@ export default function Home() {
       }, 300);
     } else {
       setMessage('You lost! Try again.');
+      setShowGhost(true); // 틀리면 귀신 이미지 표시
     }
   };
 
   const handleDifficultyChange = (level: number, label: string) => {
     setDifficulty(level);
     setSelectedDifficulty(label);
+  };
+
+  const handleGhostClick = () => {
+    setShowGhost(false); // 귀신 이미지 클릭 시 숨김
   };
 
   const increaseCups = () => {
@@ -127,6 +140,7 @@ export default function Home() {
     setMessage('');
     setShowBall(false);
     setIsShuffling(false);
+    setShowGhost(false); // 게임 리셋 시 귀신 이미지 숨김
   };
 
   return (
@@ -143,9 +157,10 @@ export default function Home() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        overflow: 'hidden',
       }}
     >
-      <h1>Yabawi Game</h1>
+      <h1>몬스터볼에 들어가기 싫은 피카츄를 잡아라!</h1>
       <div style={{ marginBottom: '20px' }}>
         <button
           onClick={() => handleDifficultyChange(10, 'Easy')}
@@ -160,7 +175,7 @@ export default function Home() {
             cursor: 'pointer',
           }}
         >
-          Easy
+          쉬움
         </button>
         <button
           onClick={() => handleDifficultyChange(25, 'Medium')}
@@ -175,7 +190,7 @@ export default function Home() {
             cursor: 'pointer',
           }}
         >
-          Medium
+          중간
         </button>
         <button
           onClick={() => handleDifficultyChange(50, 'Hard')}
@@ -189,7 +204,7 @@ export default function Home() {
             cursor: 'pointer',
           }}
         >
-          Hard
+          어려움
         </button>
       </div>
       <button
@@ -205,7 +220,7 @@ export default function Home() {
           cursor: 'pointer',
         }}
       >
-        Start Game
+        시작
       </button>
       <button
         onClick={increaseCups}
@@ -220,7 +235,7 @@ export default function Home() {
           cursor: 'pointer',
         }}
       >
-        Next Level
+        레벨 증가
       </button>
       <button
         onClick={decreaseCups}
@@ -235,7 +250,7 @@ export default function Home() {
           cursor: 'pointer',
         }}
       >
-        Previous Level
+        레벨 감소
       </button>
       <div
         style={{
@@ -250,8 +265,8 @@ export default function Home() {
             key={index}
             onClick={() => chooseCup(index)}
             style={{
-              width: '70px',
-              height: '70px',
+              width: '80px', // 크기 조정 (작게 만듦)
+              height: '80px', // 크기 조정 (작게 만듦)
               cursor: 'pointer',
               position: 'absolute',
               left: positions[index]?.left,
@@ -262,7 +277,7 @@ export default function Home() {
               transition: 'left 0.2s ease, top 0.2s ease',
             }}
           >
-            {showBall && cups[index] === ballPosition && (
+            {showBall && index === ballPosition && (
               <div
                 style={{
                   width: '40px',
@@ -272,14 +287,44 @@ export default function Home() {
                   backgroundPosition: 'center',
                   position: 'absolute',
                   bottom: '-20px',
-                  left: '40px',
+                  left: '30px',
                 }}
               />
             )}
           </div>
         ))}
+        {showGhost && (
+          <div
+            onClick={handleGhostClick}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              backgroundImage: 'url("./귀신.jpg")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              zIndex: 1000, // 귀신 이미지가 모든 요소 위에 표시되도록 함
+              cursor: 'pointer',
+              animation: 'popIn 0.1s ease', // 팍 튀어나오는 애니메이션 추가
+            }}
+          />
+        )}
       </div>
       <p style={{ marginTop: '20px' }}>{message}</p>
+      <style jsx>{`
+        @keyframes popIn {
+          0% {
+            transform: scale(0.1);
+            opacity: 0;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }
